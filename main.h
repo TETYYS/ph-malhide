@@ -4,14 +4,9 @@
 
 #define ORIGINAL_CLASS_NAME L"ProcessHacker"
 
-VOID MainWindowShowingCallback(
+VOID NTAPI UnloadCallback(
 	__in_opt PVOID Parameter,
 	__in_opt PVOID Context
-	);
-
-BOOL CALLBACK EnumWindowsCb(
-	__in  HWND hWnd,
-	__in  LPARAM lParam
 	);
 
 // RegisterClassExW hook
@@ -66,6 +61,15 @@ BOOL CALLBACK EnumWindowsCb(
 WCHAR *RandomString();
 
 WCHAR *ClassName;
-HWND *MainWindowHandle;
+HWND MainWindowHandle;
 
 PPH_PLUGIN PluginInstance;
+PH_CALLBACK_REGISTRATION PluginUnloadCallbackRegistration;
+
+typedef struct _RANGE {
+	ULONG From;
+	ULONG To;
+} RANGE;
+
+RANGE *Ranges;
+ULONG RangesSize;

@@ -26,6 +26,43 @@ LOGICAL DllMain(
 			info->Description = L"Changes window properties to prevent malware killing ProcessHacker, however you will not able to see user running PH.";
 			info->HasOptions = FALSE;
 
+			PhRegisterCallback(
+				PhGetPluginCallback(PluginInstance, PluginCallbackUnload),
+				UnloadCallback,
+				NULL,
+				&PluginUnloadCallbackRegistration
+				);
+
+			RANGE range;
+			RangesSize = 27;
+			Ranges = malloc(sizeof(RANGE) * RangesSize);
+			Ranges[0] =	 (RANGE) { .From = 0x0021, .To = 0x007E };
+			Ranges[1] =  (RANGE) { .From = 0x00A1, .To = 0x024F };
+			Ranges[2] =  (RANGE) { .From = 0x1F00, .To = 0x2049 };
+			Ranges[3] =  (RANGE) { .From = 0x2070, .To = 0x2094 };
+			Ranges[4] =  (RANGE) { .From = 0x20A0, .To = 0x20B5 };
+			Ranges[5] =  (RANGE) { .From = 0x20B8, .To = 0x20B9 };
+			Ranges[6] =  (RANGE) { .From = 0x20D0, .To = 0x20E1 };
+			Ranges[7] =  (RANGE) { .From = 0x2100, .To = 0x2138 };
+			Ranges[8] =  (RANGE) { .From = 0x214D, .To = 0x214E };
+			Ranges[9] =  (RANGE) { .From = 0x2153, .To = 0x2182 };
+			Ranges[10] = (RANGE) { .From = 0x2184, .To = 0x2184 };
+			Ranges[11] = (RANGE) { .From = 0x2190, .To = 0x21EA };
+			Ranges[12] = (RANGE) { .From = 0x2200, .To = 0x22F1 };
+			Ranges[14] = (RANGE) { .From = 0x23BE, .To = 0x23CC };
+			Ranges[15] = (RANGE) { .From = 0x23CE, .To = 0x23CE };
+			Ranges[16] = (RANGE) { .From = 0x23DA, .To = 0x23DB };
+			Ranges[18] = (RANGE) { .From = 0x2460, .To = 0x24FE };
+			Ranges[19] = (RANGE) { .From = 0x2500, .To = 0x2595 };
+			Ranges[20] = (RANGE) { .From = 0x25A0, .To = 0x25EF };
+			Ranges[22] = (RANGE) { .From = 0x3000, .To = 0x303F };
+			Ranges[23] = (RANGE) { .From = 0xFE30, .To = 0xFE4F };
+			Ranges[24] = (RANGE) { .From = 0xFE50, .To = 0xFE6B };
+			Ranges[25] = (RANGE) { .From = 0xFF01, .To = 0xFF65 };
+			Ranges[26] = (RANGE) { .From = 0xFFE0, .To = 0xFFEE };
+			
+			srand((UINT)time(NULL));
+
 			ClassName = RandomString();
 
 			if (MH_Initialize() != MH_OK)
@@ -42,6 +79,14 @@ LOGICAL DllMain(
 	return TRUE;
 }
 
+VOID NTAPI UnloadCallback(
+	__in_opt PVOID Parameter,
+	__in_opt PVOID Context
+	)
+{
+	MH_Uninitialize();
+}
+
 ATOM
 WINAPI
 H_RegisterClassExW(
@@ -50,8 +95,7 @@ H_RegisterClassExW(
 {
 	if (wcscmp(lpwcx->lpszClassName, ORIGINAL_CLASS_NAME) == 0) {
 		lpwcx->lpszClassName = ClassName;
-		MH_DisableHook(O_RegisterClass);
-		MH_RemoveHook(O_RegisterClass);
+		MH_DisableHook(&RegisterClassExW);
 	}
 	return O_RegisterClass(lpwcx);
 }
@@ -80,22 +124,18 @@ HWND WINAPI H_CreateWindowExW(
 	HWND ret = O_CreateWindow(dwExStyle, lpClassName, lpWindowName, dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
 	if (found) {
 		MainWindowHandle = ret;
-		MH_DisableHook(O_CreateWindow);
-		MH_RemoveHook(O_CreateWindow);
+		MH_DisableHook(&CreateWindowExW);
 	}
 	return ret;
 }
 
 WCHAR* RandomString() {
-	ULONG start = 0x0020;
-	ULONG end = 0xFFEF;
-	srand((UINT)time(NULL));
+	ULONG range = rand() % RangesSize;
 	ULONG len = rand() % 100;
 	WCHAR* ustr = calloc(sizeof(WCHAR), len + 1);
-	size_t intervalLength = end - start + 1;
-	
-	for (auto i = 0; i < len; i++) {
-		ustr[i] = (rand() % intervalLength) + start;
+	for (ULONG i = 0; i < len; i++) {
+		ustr[i] = (rand() % (Ranges[range].To - Ranges[range].From + 1)) + Ranges[range].From;
+		range = rand() % RangesSize;
 	}
 	ustr[len] = L'\0';
 	return ustr;
