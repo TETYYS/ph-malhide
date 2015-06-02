@@ -25,6 +25,7 @@ LOGICAL DllMain(
 			info->Author = L"TETYYS";
 			info->Description = L"Changes window properties to prevent malware killing ProcessHacker, however you will not able to see user running PH.";
 			info->HasOptions = FALSE;
+			info->Url = L"http://wj32.org/processhacker/forums/viewtopic.php?f=18&t=1301&p=5731";
 
 			PhRegisterCallback(
 				PhGetPluginCallback(PluginInstance, PluginCallbackUnload),
@@ -73,6 +74,9 @@ LOGICAL DllMain(
 
 			if (MH_CreateHook(&RegisterClassExW, &H_RegisterClassExW, (LPVOID*)(&O_RegisterClass)) != MH_OK || MH_EnableHook(&RegisterClassExW) != MH_OK)
 				return 1;
+
+			if (MH_CreateHook(&FindWindowExW, &H_FindWindowExW, (LPVOID*)(&O_FindWindow)) != MH_OK || MH_EnableHook(&FindWindowExW) != MH_OK)
+				return 1;
 		}
 		break;
 	}
@@ -85,6 +89,20 @@ VOID NTAPI UnloadCallback(
 	)
 {
 	MH_Uninitialize();
+}
+
+HWND WINAPI	H_FindWindowExW(
+	_In_opt_ HWND hWndParent,
+	_In_opt_ HWND hWndChildAfter,
+	_In_opt_ LPCWSTR lpszClass,
+	_In_opt_ LPCWSTR lpszWindow
+	)
+{
+	if (lpszClass && wcscmp(lpszClass, ORIGINAL_CLASS_NAME) == 0) {
+		lpszClass = ClassName;
+		MH_DisableHook(&FindWindowExW);
+	}
+	return O_FindWindow(hWndParent, hWndChildAfter, lpszClass, lpszWindow);
 }
 
 ATOM
@@ -131,7 +149,10 @@ HWND WINAPI H_CreateWindowExW(
 
 WCHAR* RandomString() {
 	ULONG range = rand() % RangesSize;
-	ULONG len = rand() % 100;
+	ULONG len;
+	do {
+		len = rand() % 100;
+	} while (len == 0);
 	WCHAR* ustr = calloc(sizeof(WCHAR), len + 1);
 	for (ULONG i = 0; i < len; i++) {
 		ustr[i] = (rand() % (Ranges[range].To - Ranges[range].From + 1)) + Ranges[range].From;

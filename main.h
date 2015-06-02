@@ -58,6 +58,24 @@ VOID NTAPI UnloadCallback(
 	TCreateWindowExW O_CreateWindow;
 // End CreateWindowExW hook
 
+// Start FindWindowExW hook
+	typedef HWND(WINAPI *TFindWindowExW)(
+		_In_opt_ HWND hWndParent,
+		_In_opt_ HWND hWndChildAfter,
+		_In_opt_ LPCWSTR lpszClass,
+		_In_opt_ LPCWSTR lpszWindow
+	);
+
+	HWND WINAPI	H_FindWindowExW(
+		_In_opt_ HWND hWndParent,
+		_In_opt_ HWND hWndChildAfter,
+		_In_opt_ LPCWSTR lpszClass,
+		_In_opt_ LPCWSTR lpszWindow
+		);
+
+	TFindWindowExW O_FindWindow;
+// End FindWindowExW hook
+
 WCHAR *RandomString();
 
 WCHAR *ClassName;
